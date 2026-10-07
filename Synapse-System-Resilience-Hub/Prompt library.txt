@@ -1,0 +1,156 @@
+PROMPT LIBRARY
+
+1) Project setup prompts
+
+Prompt 1: Full project creation
+Create a complete project from scratch for a [project type].
+Requirements:
+- Use the best modern stack for this use case
+- Set up the project structure and configuration files
+- Install required dependencies
+- Add environment variable examples
+- Create scripts for development, build, testing, and production
+- Add a README with setup and usage instructions
+- Keep the project clean, maintainable, and production-ready
+
+Prompt 2: Full-stack app creation
+Create a complete full-stack application for [business problem].
+Requirements:
+- Backend API with proper routes and validation
+- Frontend UI with modern design patterns
+- Database setup and schema design if needed
+- Authentication and authorization approach if required
+- Environment setup
+- Deployment-ready structure
+- Clear README instructions
+
+Prompt 3: MVP project creation
+Set up an MVP for [idea/product].
+Requirements:
+- Simple but production-quality setup
+- Core features only
+- Clear folder structure
+- Essential config and environment files
+- Basic validation and testing approach
+- README with quick start guide
+
+2) Project modification prompts
+
+Prompt 4: Add feature
+Modify this project to add [feature].
+Requirements:
+- Follow the existing app architecture
+- Keep the codebase consistent with current patterns
+- Make minimal, clean changes
+- Update related docs or config if required
+- Explain design decisions and any assumptions
+- Ensure the app still runs correctly
+
+Prompt 5: Improve existing feature
+Improve the existing [feature/module] in this project.
+Requirements:
+- Make the feature more reliable and efficient
+- Keep the design consistent with the app
+- Avoid unnecessary rewrites
+- Highlight risks and edge cases
+- Provide a brief summary of what changed and why
+
+Prompt 6: Refactor code
+Refactor the [module/component] in this project.
+Requirements:
+- Improve readability and maintainability
+- Preserve behavior unless a bug fix is included
+- Keep the scope focused
+- Explain the refactor trade-offs
+- Validate that the refactor doesn't break the app
+
+Prompt 7: Bug fix prompt
+Fix the bug in [area/module].
+Requirements:
+- Reproduce the issue and understand the root cause
+- Make the smallest correct fix
+- Validate the fix with a relevant check or test
+- Explain the cause and the solution
+- Mention any remaining risks
+
+3) Technical review prompts
+
+Prompt 8: Technical audit
+Perform a technical audit of this project.
+Requirements:
+- Check the project structure and architecture
+- Review config, environment variables, dependencies, and scripts
+- Identify typing, build, lint, security, and runtime issues
+- Highlight risks and missing setup steps
+- Suggest prioritized fixes
+
+Prompt 9: Build validation
+Run a technical validation of this project.
+Requirements:
+- Check for dependency issues
+- Review TypeScript/build problems
+- Verify local development startup
+- Check environment configuration
+- Report blockers and recommended fixes
+
+Prompt 10: Security and config review
+Review this project for security and configuration issues.
+Requirements:
+- Check secrets handling
+- Identify exposed credentials or unsafe patterns
+- Review environment variable usage
+- Flag risky assumptions or untrusted input handling
+- Recommend secure fixes
+
+4) Dev workflow prompts
+
+Prompt 11: Debug app startup issue
+Debug why this app is not starting locally.
+Requirements:
+- Check package scripts and environment setup
+- Review dependency installation issues
+- Inspect config files and runtime environment
+- Identify Windows/macOS/Linux-specific problems if relevant
+- Provide exact commands or fixes
+
+Prompt 12: Prepare for deployment
+Prepare this project for deployment.
+Requirements:
+- Review environment configuration
+- Validate build and runtime assumptions
+- Flag secrets and production requirements
+- Provide deployment checklist
+- Suggest minimal production hardening steps
+
+5) Generic reusable prompts
+
+Prompt 13: Quick project assistant
+Act as a senior full-stack project assistant. Review this project, understand its structure, and help me with setup, modification, debugging, and technical checks. Keep the work practical and project-specific.
+
+Prompt 14: Architecture guidance
+Review this project architecture and suggest improvements for scalability, maintainability, and code quality without breaking current functionality.
+
+Prompt 15: Implementation plan
+Create a step-by-step implementation plan for [feature/project change].
+Requirements:
+- Break it into phases
+- Include technical tasks and risks
+- Mention validation steps
+- Keep it actionable and realistic
+
+6) PowerShell-specific reusable prompts
+
+Prompt 16: Windows setup assistant
+Help me set up and run this project using Windows PowerShell. Use the actual repo commands and project structure. Include commands for installation, local startup, checks, Prisma setup, and troubleshooting blocked npm scripts.
+
+Prompt 17: Windows app debug
+Debug the local Windows PowerShell startup issue for this project. Check execution policy, path issues, npm scripts, and environment setup. Provide the exact working commands.
+
+Prompt 18: Project automation prompt
+Create PowerShell scripts for this project to handle setup, npm install, app start, validation, Prisma workflow, and browser launch. Keep them simple and reusable.
+
+7) Best all-purpose prompt
+
+Use this one often:
+
+Act as a senior software project assistant for this repository. Understand the current project structure, use the actual scripts and config in the repo, and help me with setup, feature implementation, debugging, and technical validation. Keep changes minimal, project-specific, and production-aware. If a project issue is environment-specific, explain the exact fix and include the commands needed for local execution.

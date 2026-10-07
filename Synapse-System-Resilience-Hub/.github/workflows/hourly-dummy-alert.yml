@@ -1,0 +1,24 @@
+name: Generate hourly dummy alert
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate one dummy alert
+        env:
+          SYNOPSE_BASE_URL: ${{ secrets.SYNOPSE_BASE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$SYNOPSE_BASE_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "SYNOPSE_BASE_URL and CRON_SECRET repository secrets are required."
+            exit 1
+          fi
+          curl --silent --show-error --fail-with-body \
+            --request GET \
+            --url "${SYNOPSE_BASE_URL%/}/api/alerts/generate" \
+            --header "Authorization: Bearer ${CRON_SECRET}"

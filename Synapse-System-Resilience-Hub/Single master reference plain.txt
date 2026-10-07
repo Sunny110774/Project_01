@@ -1,0 +1,135 @@
+SINGLE MASTER REFERENCE
+
+1) Project startup prompts
+
+Create a complete project from scratch for a [project type].
+Requirements:
+- Use the best modern stack for the use case
+- Set up architecture and folder structure
+- Add config, scripts, and dependencies
+- Include environment variable examples
+- Add README with setup and run instructions
+- Keep the project clean, scalable, and production-aware
+
+Set up an MVP for [product/idea].
+Requirements:
+- Keep the scope realistic and focused
+- Include only core features
+- Add essential UI/backend structure
+- Provide a local startup guide
+- Include basic validation steps
+- Keep the code easy to extend
+
+Create a complete full-stack application for [business need].
+Requirements:
+- Frontend and backend structure
+- API routes and validation
+- Database model or schema if needed
+- Auth/security design if relevant
+- Environment management
+- Deployment-ready scripts
+- README quick start guide
+
+2) Project modification prompts
+
+Modify this project to add [feature].
+Requirements:
+- Follow the existing project architecture
+- Keep the codebase consistent with current patterns
+- Make minimal and clean changes
+- Update related docs/config if needed
+- Explain implementation clearly
+- Ensure the app still works after the change
+
+Improve the existing [feature/module].
+Requirements:
+- Make it more reliable and maintainable
+- Keep design consistent with the app
+- Avoid unnecessary rewrites
+- Highlight risks and edge cases
+- Summarize what changed and why
+
+Refactor the [module/component] in this project.
+Requirements:
+- Improve readability and maintainability
+- Keep behavior unchanged unless required by a bug fix
+- Keep scope focused
+- Explain trade-offs
+- Validate the refactor with a relevant check
+
+Fix the bug in [area/module].
+Requirements:
+- Find root cause before changing code
+- Make the smallest correct fix
+- Validate with a relevant check or test
+- Explain cause and solution
+- Mention remaining risks
+
+3) Technical checks prompts
+
+Perform a technical audit of this project.
+Requirements:
+- Review architecture, config, dependencies, and scripts
+- Check TypeScript, lint, build, and runtime issues
+- Validate environment variable setup
+- Identify security or operational risks
+- Provide a prioritized list of fixes
+
+Run a full technical validation of this project.
+Requirements:
+- Check dependency setup and versions
+- Review local startup flow
+- Validate build and compile steps
+- Check lint and type issues
+- Flag blockers and required fixes
+
+Debug why this project is not starting locally.
+Requirements:
+- Inspect package scripts and environment
+- Check Windows/macOS/Linux differences if relevant
+- Review missing dependencies or config errors
+- Provide exact commands or code changes to fix it
+
+Review this project for security issues.
+Requirements:
+- Check secrets handling and env var usage
+- Look for unsafe direct trust of input data
+- Review auth patterns and API exposure
+- Identify risks and recommended fixes
+
+4) PowerShell prompts
+
+Work in this project and help me manage it from Windows PowerShell. Read the repo and actual scripts, then create or update PowerShell helper files for:
+- running the app locally
+- full local setup
+- Prisma commands
+- validation checks
+- Git workflow
+Also explain common PowerShell issues like script execution policy blocking npm and how to fix them using Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass.
+
+5) Best all-purpose prompt
+
+Act as a senior software project assistant for this repository. Understand the current project structure, use the actual scripts and config in the repo, and help me with setup, feature implementation, debugging, and technical validation. Keep changes minimal, project-specific, and production-aware. If a project issue is environment-specific, explain the exact fix and include the commands needed for local execution.
+
+6) Useful quick commands
+
+PowerShell start project:
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+Set-Location "d:\Naveen\Learning and job hunt\ai.prototype\Synapse-System Resilience Hub"
+npm.cmd run dev
+start http://localhost:3000
+
+PowerShell full local setup:
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+Set-Location "d:\Naveen\Learning and job hunt\ai.prototype\Synapse-System Resilience Hub"
+Copy-Item .env.example .env
+npm.cmd install
+npx.cmd prisma generate
+npm.cmd run db:migrate
+npm.cmd run db:seed
+npm.cmd run dev
+
+Checks:
+npm.cmd run typecheck
+npm.cmd run lint
+npm.cmd run build

@@ -1,0 +1,207 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Priority {
+  P1
+  P2
+  P3
+  P4
+}
+
+enum AlertStatusCode {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum AlertSource {
+  EMAIL
+  MANUAL
+  DEMO
+}
+
+enum KnowledgeProvider {
+  SHAREPOINT
+  JIRA
+  CONFLUENCE
+}
+
+model Alert {
+  id                 String               @id @default(cuid())
+  reference          String               @unique @default(cuid())
+  subject            String
+  sender             String
+  recipient          String?
+  location           String?
+  bodyText           String               @db.Text
+  bodyHtml           String?              @db.Text
+  priority           Priority             @default(P3)
+  status             AlertStatusCode      @default(OPEN)
+  assignedUserId     String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  firstRespondedAt   DateTime?
+  closedAt           DateTime?
+  serviceNowSysId    String?              @unique
+  serviceNowNumber   String?
+  serviceNowUrl      String?
+  rawAlert           RawAlert?
+  assignee           User?                @relation("AlertAssignee", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  statusDefinition   AlertStatus          @relation(fields: [status], references: [code], onDelete: Restrict)
+  severityDefinition AlertSeverity       @relation(fields: [priority], references: [code], onDelete: Restrict)
+  statusAudits       AlertStatusAudit[]
+  severityAudits     AlertSeverityAudit[]
+  activities         ActivityEvent[]
+
+  @@index([priority, status, createdAt])
+  @@index([assignedUserId, status])
+  @@index([createdAt, status])
+  @@map("Synopse_AlertDetails")
+}
+
+model User {
+  id               String      @id @default(cuid())
+  username         String      @unique
+  displayName      String
+  email            String?     @unique
+  phoneNumber      String?     @unique
+  isActive         Boolean     @default(true)
+  mfaEnabled       Boolean     @default(true)
+  lastMfaCode      String?
+  mfaCodeExpiresAt DateTime?
+  lastLoginAt      DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  assignedAlerts   Alert[]     @relation("AlertAssignee")
+  auditEntries     UserAudit[] @relation("AuditedUser")
+  auditActions     UserAudit[] @relation("UserAuditActor")
+
+  @@map("Synopse_Users")
+}
+
+model UserAudit {
+  id          String    @id @default(cuid())
+  userId      String
+  actorUserId String?
+  action      String
+  details     Json?
+  createdAt   DateTime  @default(now())
+  user        User      @relation("AuditedUser", fields: [userId], references: [id], onDelete: Cascade)
+  actor       User?     @relation("UserAuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@map("SynopseUsersAudit")
+}
+
+model RawAlert {
+  id         String      @id @default(cuid())
+  alertId    String      @unique
+  source     AlertSource @default(EMAIL)
+  rawPayload String      @db.Text
+  messageId  String?     @unique
+  receivedAt DateTime    @default(now())
+  alert      Alert       @relation(fields: [alertId], references: [id], onDelete: Cascade)
+
+  @@index([source, receivedAt])
+  @@map("Synopse_RawAlerts")
+}
+
+model AlertStatus {
+  code      AlertStatusCode  @id
+  label     String           @unique
+  sortOrder Int              @unique
+  isTerminal Boolean         @default(false)
+  alerts    Alert[]
+  audits    AlertStatusAudit[]
+
+  @@map("Synopse_AlertStatus")
+}
+
+model AlertStatusAudit {
+  id         String          @id @default(cuid())
+  alertId    String
+  statusCode AlertStatusCode
+  actor      String?
+  note       String?         @db.Text
+  changedAt  DateTime        @default(now())
+  alert      Alert           @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  status     AlertStatus     @relation(fields: [statusCode], references: [code], onDelete: Restrict)
+
+  @@index([alertId, changedAt])
+  @@map("Synopse_AlertStatusAudit")
+}
+
+model AlertSeverity {
+  code       Priority             @id
+  label      String               @unique
+  slaMinutes Int
+  sortOrder  Int                  @unique
+  alerts     Alert[]
+  audits     AlertSeverityAudit[]
+
+  @@map("Synopse_AlertSeverity")
+}
+
+model AlertSeverityAudit {
+  id           String    @id @default(cuid())
+  alertId      String
+  severityCode Priority
+  actor        String?
+  note         String?   @db.Text
+  changedAt    DateTime  @default(now())
+  alert        Alert     @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  severity     AlertSeverity @relation(fields: [severityCode], references: [code], onDelete: Restrict)
+
+  @@index([alertId, changedAt])
+  @@map("Synopse_AlertSeverityAudit")
+}
+
+model ActivityEvent {
+  id        String   @id @default(cuid())
+  alertId   String
+  alert     Alert    @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  action    String
+  actor     String?
+  details   Json?
+  createdAt DateTime @default(now())
+
+  @@index([alertId, createdAt])
+}
+
+model KnowledgeSource {
+  id           String             @id @default(cuid())
+  provider     KnowledgeProvider
+  name         String
+  siteUrl      String?
+  externalId   String?
+  enabled      Boolean            @default(false)
+  lastSyncedAt DateTime?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  documents    KnowledgeDocument[]
+
+  @@index([provider, externalId])
+  @@index([provider, enabled])
+}
+
+model KnowledgeDocument {
+  id             String          @id @default(cuid())
+  sourceId       String
+  source         KnowledgeSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  externalId     String
+  title          String
+  url            String?
+  content        String          @db.Text
+  contentHash    String?
+  lastIndexedAt  DateTime        @default(now())
+  createdAt      DateTime        @default(now())
+
+  @@unique([sourceId, externalId])
+  @@index([sourceId, lastIndexedAt])
+}
