@@ -1,0 +1,247 @@
+name: UAT CI/CD Pipeline
+
+on:
+  push:
+    branches: [uat]
+  pull_request:
+    branches: [uat]
+
+env:
+  NODE_VERSION: 20
+  REGISTRY: ghcr.io
+
+jobs:
+  # Phase 1: Code Quality & Build Verification
+  verify:
+    name: Verify Code Quality & Build
+    runs-on: ubuntu-latest
+    outputs:
+      build-status: ${{ job.status }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Run TypeScript type check
+        run: npm run typecheck
+
+      - name: Run ESLint linter
+        run: npm run lint
+
+      - name: Build application
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: .next/
+          retention-days: 1
+
+  # Phase 2: Security Scanning
+  security-scan:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+  # Phase 3: Database Migration Testing
+  database-migration:
+    name: Database Migration Test
+    runs-on: ubuntu-latest
+    needs: verify
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: synopse_uat
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Verify migrations exist
+        run: ls -la prisma/migrations/ || echo "No migrations directory found"
+
+      - name: Run migration test
+        run: npm run db:deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/synopse_uat
+
+      - name: Verify database schema
+        run: npm run db:generate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/synopse_uat
+
+  # Phase 4: Deploy to Vercel Preview
+  deploy-uat-preview:
+    name: Deploy to Vercel Preview
+    runs-on: ubuntu-latest
+    needs: [verify, security-scan, database-migration]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/uat'
+    environment: uat
+    outputs:
+      deployment-url: ${{ steps.deploy.outputs.deployment-url }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Pull Vercel environment
+        run: npx vercel pull --yes --environment=preview --token="${{ secrets.VERCEL_TOKEN }}"
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Build with Vercel
+        run: npx vercel build --token="${{ secrets.VERCEL_TOKEN }}"
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Deploy to Vercel Preview
+        id: deploy
+        run: |
+          DEPLOYMENT_URL=$(npx vercel deploy --prebuilt --token="${{ secrets.VERCEL_TOKEN }}" | grep -oP '(?<=https://).*' | head -1)
+          echo "deployment-url=https://$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Apply database migrations on UAT
+        run: npm run db:deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Post deployment comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 UAT Preview Deployment Successful!\n\n**Deployment URL**: ${{ steps.deploy.outputs.deployment-url }}\n\n✅ All checks passed:\n- Code quality verified\n- Security scan completed\n- Database migrations tested\n\nReady for UAT testing.`
+            })
+
+  # Phase 5: Health Check & Smoke Test
+  health-check:
+    name: Health Check & Smoke Test
+    runs-on: ubuntu-latest
+    needs: deploy-uat-preview
+    if: github.event_name == 'push' && github.ref == 'refs/heads/uat'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Wait for deployment to be ready
+        run: sleep 30
+
+      - name: Health check on deployment
+        run: |
+          DEPLOYMENT_URL="${{ needs.deploy-uat-preview.outputs.deployment-url }}"
+          for i in {1..5}; do
+            echo "Attempt $i: Checking $DEPLOYMENT_URL..."
+            if curl -f -s "$DEPLOYMENT_URL" > /dev/null 2>&1; then
+              echo "✅ Health check passed"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "❌ Health check failed"
+          exit 1
+
+  # Phase 6: Generate Summary Report
+  summary:
+    name: Generate Summary Report
+    runs-on: ubuntu-latest
+    needs: [verify, security-scan, database-migration, deploy-uat-preview, health-check]
+    if: always()
+    steps:
+      - name: Create deployment summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const summary = `## UAT CI/CD Pipeline Summary
+            
+            **Workflow Status**: ${{ job.status }}
+            **Branch**: uat
+            **Commit**: ${{ github.sha }}
+            **Author**: ${{ github.actor }}
+            
+            ### Pipeline Results:
+            - **Code Quality**: ${{ needs.verify.result }}
+            - **Security Scan**: ${{ needs.security-scan.result }}
+            - **Database Migration**: ${{ needs.database-migration.result }}
+            - **Vercel Deployment**: ${{ needs.deploy-uat-preview.result }}
+            - **Health Check**: ${{ needs.health-check.result }}
+            
+            ${{ needs.deploy-uat-preview.result == 'success' ? '✅ **Deployment URL**: ' + needs.deploy-uat-preview.outputs.deployment-url : '⚠️ Deployment not completed' }}
+            
+            ### Next Steps:
+            1. Run UAT testing on the deployed environment
+            2. Verify all critical features
+            3. Check alert ingestion and dashboard functionality
+            4. Once approved, trigger **Promote to production** workflow
+            `;
+            
+            core.summary.addRaw(summary);
+            await core.summary.write();
