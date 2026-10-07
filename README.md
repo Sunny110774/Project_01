@@ -1,2 +1,2 @@
-# Project_01
-For Trading indicator
+# Projects 
+For all prototypes
